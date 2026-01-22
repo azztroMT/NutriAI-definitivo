@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LogIn, User as UserIcon, Sparkles, BrainCircuit, Activity } from 'lucide-react';
+import { LogIn, User as UserIcon, Sparkles, Activity } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (name: string) => void;
@@ -9,6 +9,8 @@ interface LoginProps {
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [name, setName] = useState('');
+  // Nova URL da logo fornecida pelo usuário
+  const logoUrl = "https://raw.githubusercontent.com/azztroMT/Logo-nutriai/refs/heads/main/20260122_145227_0000.png?token=GHSAT0AAAAAADT2R7W5SQC3LJ2ISPRZ4M762LSMR5Q";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,9 +31,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <motion.div
           animate={{ y: [0, -10, 0] }}
           transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-          className="inline-block p-4 rounded-3xl bg-emerald-500/20 mb-6 shadow-lg shadow-emerald-500/10"
+          className="inline-block mb-6 relative"
         >
-          <BrainCircuit className="w-10 h-10 text-emerald-400" />
+          <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full scale-150" />
+          <div className="relative z-10 p-1 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-[2.5rem] border border-white/10 shadow-inner">
+            <img 
+              src={logoUrl} 
+              alt="NutriAI Logo" 
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = "https://cdn-icons-png.flaticon.com/512/11641/11641857.png";
+              }}
+              className="w-28 h-28 rounded-[2.2rem] object-cover shadow-2xl"
+            />
+          </div>
         </motion.div>
         
         <h1 className="text-5xl font-[900] tracking-tighter mb-2 bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
