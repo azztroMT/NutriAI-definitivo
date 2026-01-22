@@ -2,36 +2,29 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NutritionAnalysis } from "../types";
 
-/**
- * Analyzes a plate image using Gemini 3 Pro Vision capabilities.
- * Always initializes the client with process.env.API_KEY directly to ensure correct configuration.
- */
 export const analyzePlate = async (base64Image: string): Promise<NutritionAnalysis> => {
-  // Initialize AI client per-request as per coding guidelines
+  // Inicializa o cliente com a chave de ambiente do Netlify
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  // Extract base64 data without metadata prefix
   const base64Data = base64Image.split(',')[1] || base64Image;
 
   const prompt = `
     Analise esta imagem de comida e forneça um relatório nutricional detalhado em PORTUGUÊS (Brasil).
-    O retorno deve ser APENAS um JSON válido.
+    O retorno deve ser APENAS um JSON válido seguindo exatamente a estrutura do schema fornecido.
     
-    A análise deve ser realista com base nas porções visíveis.
-    Campos necessários:
-    - plateName: Nome criativo do prato.
-    - totalCalories: Estimativa total de calorias (número).
-    - macros: Objeto com protein (proteína), carbs (carboidratos) e fats (gorduras) em gramas.
-    - ingredients: Lista de componentes com weightGrams (número) e householdMeasure (medida caseira como "1 colher de sopa", "1 concha média", etc).
-    - positivePoints: Pontos fortes nutricionais (mínimo 2).
-    - attentionPoints: Pontos de atenção como excesso de sódio, baixo teor de fibras, etc.
-    - improvementSuggestion: Uma sugestão prática e específica para tornar esta refeição melhor.
+    A análise deve ser baseada no que é visível na imagem.
+    - plateName: Nome do prato.
+    - totalCalories: Calorias totais (número).
+    - macros: protein, carbs, fats (números).
+    - ingredients: lista com name, weightGrams e householdMeasure.
+    - positivePoints: 2 a 3 pontos positivos.
+    - attentionPoints: pontos de atenção.
+    - improvementSuggestion: uma dica para melhorar a refeição.
   `;
 
   try {
-    // Using gemini-3-pro-preview for complex nutritional reasoning and high-fidelity vision tasks.
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: {
         parts: [
           { text: prompt },
@@ -86,15 +79,11 @@ export const analyzePlate = async (base64Image: string): Promise<NutritionAnalys
       }
     });
 
-    // Accessing the text property directly as per best practices.
     const text = response.text;
-    if (!text) {
-      throw new Error("Resposta vazia da IA");
-    }
-
+    if (!text) throw new Error("Resposta vazia da IA");
     return JSON.parse(text) as NutritionAnalysis;
   } catch (error: any) {
-    console.error("Erro na análise Gemini:", error);
-    throw new Error(error.message || "Não foi possível analisar a imagem.");
+    console.error("Erro NutriAI:", error);
+    throw new Error("Erro na análise. Verifique sua conexão ou API KEY.");
   }
 };

@@ -1,0 +1,17 @@
+
+{
+  "short_name": "NutriAI",
+  "name": "NutriAI - Inteligência Nutricional",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2424/2424520.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#022c22",
+  "background_color": "#022c22"
+}
