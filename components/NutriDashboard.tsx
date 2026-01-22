@@ -56,6 +56,12 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
     }
   };
 
+  const reset = () => {
+    setImage(null);
+    setAnalysis(null);
+    setLoading(false);
+  };
+
   const startAnalysis = async () => {
     if (!image) return;
     setLoading(true);
@@ -63,17 +69,12 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
       const result = await analyzePlate(image);
       setAnalysis(result);
     } catch (err: any) {
-      // Em caso de falha total após retentativas, apenas resetamos suavemente 
-      // para o usuário tentar tirar outra foto em vez de exibir um erro técnico.
-      setImage(null);
+      console.error("Erro capturado silenciosamente:", err);
+      // Em caso de erro, resetamos a tela conforme solicitado
+      reset();
     } finally {
       setLoading(false);
     }
-  };
-
-  const reset = () => {
-    setImage(null);
-    setAnalysis(null);
   };
 
   return (

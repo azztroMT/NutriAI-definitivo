@@ -8,9 +8,9 @@ const RETRY_DELAY = 2000;
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * Realiza a análise nutricional da imagem.
+ * Realiza a análise nutricional da imagem com suporte a rotação de múltiplas chaves.
  * @param base64Image Imagem em base64
- * @param keyIndex Índice da chave de API a ser utilizada (0 para primária, 1 para secundária)
+ * @param keyIndex Índice da chave de API a ser utilizada (0: primária, 1: secundária, 2: terciária)
  * @param attempt Número da tentativa atual para a chave selecionada
  */
 export const analyzePlate = async (
@@ -22,12 +22,13 @@ export const analyzePlate = async (
   // Lista de chaves injetadas via vite.config.ts
   const keys = [
     process.env.API_KEY,
-    process.env.API_KEY_SECONDARY
+    process.env.API_KEY_SECONDARY,
+    process.env.API_KEY_TERTIARY
   ].filter(k => k && k !== 'undefined' && k !== 'null' && k !== '');
 
-  // Se o índice exceder o número de chaves, significa que todas falharam
+  // Se o índice exceder o número de chaves disponíveis, todas falharam
   if (keyIndex >= keys.length) {
-    throw new Error("Limite de requisições excedido em todas as contas disponíveis.");
+    throw new Error("Limite de requisições excedido em todas as contas (Primária, Secundária e Terciária).");
   }
 
   const currentKey = keys[keyIndex];
@@ -119,13 +120,13 @@ export const analyzePlate = async (
       errorMsg.includes("exhausted") || 
       errorMsg.includes("limit");
 
-    // Se a cota acabou e há uma próxima chave na lista, troca imediatamente
+    // Se a cota acabou e há uma próxima chave na lista, alterna imediatamente
     if (isQuotaError && keyIndex < keys.length - 1) {
-      console.warn(`[NutriAI] Chave ${keyIndex + 1} esgotada. Alternando para chave secundária...`);
+      console.warn(`[NutriAI] Chave ${keyIndex + 1} esgotada. Alternando para próxima chave disponível (Índice: ${keyIndex + 1})...`);
       return analyzePlate(base64Image, keyIndex + 1, 0);
     }
 
-    // Para outros erros transitórios, aplica a lógica de retentativa padrão
+    // Para outros erros transitórios (conexão, etc), aplica retentativa na mesma chave
     if (attempt < MAX_RETRIES) {
       const waitTime = RETRY_DELAY * (attempt + 1);
       console.log(`[NutriAI] Erro na tentativa ${attempt + 1}. Retentando em ${waitTime}ms...`);
@@ -133,7 +134,7 @@ export const analyzePlate = async (
       return analyzePlate(base64Image, keyIndex, attempt + 1);
     }
 
-    console.error("[NutriAI] Falha crítica após todas as tentativas:", error);
-    throw new Error("O sistema está com instabilidade ou alta demanda. Tente novamente mais tarde.");
+    console.error("[NutriAI] Falha crítica após todas as tentativas e rotação de chaves:", error);
+    throw new Error(isQuotaError ? "Cota de IA esgotada em todas as contas." : "Instabilidade técnica no serviço de IA. Tente novamente.");
   }
 };
