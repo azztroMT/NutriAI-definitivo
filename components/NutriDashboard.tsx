@@ -1,7 +1,6 @@
-
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Upload, LogOut, ChevronLeft, Sparkles, Loader2, RefreshCw, Image as ImageIcon, CheckCircle } from 'lucide-react';
+import { Camera, LogOut, ChevronLeft, Sparkles, Loader2, RefreshCw, Image as ImageIcon, CheckCircle } from 'lucide-react';
 import { User, NutritionAnalysis } from '../types';
 import { analyzePlate } from '../services/geminiService';
 import AnalysisReport from './AnalysisReport';
@@ -14,10 +13,30 @@ interface NutriDashboardProps {
 const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [analysis, setAnalysis] = useState<NutritionAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const steps = [
+    "Escaneando alimentos...",
+    "Identificando porções...",
+    "Calculando densidade calórica...",
+    "Finalizando relatório..."
+  ];
+
+  useEffect(() => {
+    let interval: any;
+    if (loading) {
+      interval = setInterval(() => {
+        setLoadingStep(prev => (prev + 1) % steps.length);
+      }, 2000);
+    } else {
+      setLoadingStep(0);
+    }
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,7 +80,7 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
           </h2>
           <div className="flex items-center gap-2 mt-1">
             <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <p className="text-emerald-500/50 text-[10px] font-black uppercase tracking-[0.2em]">IA Conectada • Modo Premium</p>
+            <p className="text-emerald-500/50 text-[10px] font-black uppercase tracking-[0.2em]">SISTEMA ATIVO • PREMIUM</p>
           </div>
         </motion.div>
         
@@ -87,22 +106,12 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
               {!image ? (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10 w-full max-w-2xl">
-                    <div className="glass p-4 rounded-3xl flex flex-col items-center gap-2 border-white/5">
-                      <CheckCircle className="text-emerald-400 w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Calorias</span>
-                    </div>
-                    <div className="glass p-4 rounded-3xl flex flex-col items-center gap-2 border-white/5">
-                      <CheckCircle className="text-emerald-400 w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Macros</span>
-                    </div>
-                    <div className="glass p-4 rounded-3xl flex flex-col items-center gap-2 border-white/5">
-                      <CheckCircle className="text-emerald-400 w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Gramas</span>
-                    </div>
-                    <div className="glass p-4 rounded-3xl flex flex-col items-center gap-2 border-white/5">
-                      <CheckCircle className="text-emerald-400 w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Insights</span>
-                    </div>
+                    {['Calorias', 'Macros', 'Gramas', 'Insights'].map((label) => (
+                      <div key={label} className="glass p-4 rounded-3xl flex flex-col items-center gap-2 border-white/5">
+                        <CheckCircle className="text-emerald-400 w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/40">{label}</span>
+                      </div>
+                    ))}
                   </div>
 
                   <div className="w-20 h-20 bg-emerald-500/10 rounded-[2rem] flex items-center justify-center mb-8 border border-emerald-500/20">
@@ -111,7 +120,7 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
                   
                   <h3 className="text-4xl font-[900] tracking-tighter mb-4 uppercase">Analise sua Refeição</h3>
                   <p className="text-white/40 max-w-md mb-12 font-medium leading-relaxed">
-                    Nossa IA avançada identifica ingredientes e calcula a densidade nutricional em segundos.
+                    Capture uma foto nítida do seu prato para uma análise nutricional profunda via IA.
                   </p>
                   
                   <div className="flex flex-col sm:flex-row justify-center gap-4 w-full max-w-md">
@@ -141,12 +150,14 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
                       alt="Refeição"
                       className="max-h-[350px] rounded-[3rem] object-cover shadow-2xl border-4 border-white/5"
                     />
-                    <button
-                      onClick={reset}
-                      className="absolute -top-4 -right-4 bg-red-500 p-3 rounded-full hover:bg-red-600 transition-all shadow-lg"
-                    >
-                      <RefreshCw className="w-5 h-5" />
-                    </button>
+                    {!loading && (
+                      <button
+                        onClick={reset}
+                        className="absolute -top-4 -right-4 bg-red-500 p-3 rounded-full hover:bg-red-600 transition-all shadow-lg"
+                      >
+                        <RefreshCw className="w-5 h-5" />
+                      </button>
+                    )}
                   </div>
 
                   {error && (
@@ -158,14 +169,25 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
                   <button
                     onClick={startAnalysis}
                     disabled={loading}
-                    className="flex items-center gap-3 bg-white text-emerald-950 font-[900] px-12 py-5 rounded-2xl hover:bg-emerald-100 transition-all shadow-xl shadow-white/10 active:scale-95 disabled:opacity-50"
+                    className="flex flex-col items-center gap-4 bg-white text-emerald-950 font-[900] px-12 py-5 rounded-2xl hover:bg-emerald-100 transition-all shadow-xl shadow-white/10 active:scale-95 disabled:opacity-80"
                   >
-                    {loading ? (
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-6 h-6 text-emerald-600" />
+                    <div className="flex items-center gap-3">
+                      {loading ? (
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-6 h-6 text-emerald-600" />
+                      )}
+                      <span>{loading ? 'PROCESSANDO...' : 'GERAR RELATÓRIO'}</span>
+                    </div>
+                    {loading && (
+                      <motion.span 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }}
+                        className="text-[10px] text-emerald-800 tracking-widest font-black uppercase"
+                      >
+                        {steps[loadingStep]}
+                      </motion.span>
                     )}
-                    {loading ? 'ANALISANDO PRATO...' : 'GERAR RELATÓRIO'}
                   </button>
                 </div>
               )}
@@ -186,7 +208,7 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <h3 className="text-xl font-[900] tracking-tighter uppercase text-emerald-400">Relatório de Análise</h3>
+              <h3 className="text-xl font-[900] tracking-tighter uppercase text-emerald-400">Inteligência Nutricional</h3>
             </div>
             <AnalysisReport analysis={analysis} image={image!} />
           </motion.div>
