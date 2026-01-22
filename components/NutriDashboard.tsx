@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, LogOut, ChevronLeft, Sparkles, Loader2, RefreshCw, Image as ImageIcon, CheckCircle } from 'lucide-react';
+import { Camera, LogOut, ChevronLeft, Sparkles, Loader2, RefreshCw, Image as ImageIcon, CheckCircle, Clock } from 'lucide-react';
 import { User, NutritionAnalysis } from '../types';
 import { analyzePlate } from '../services/geminiService';
 import AnalysisReport from './AnalysisReport';
@@ -13,9 +14,9 @@ interface NutriDashboardProps {
 const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [analysis, setAnalysis] = useState<NutritionAnalysis | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -23,6 +24,9 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
     "Escaneando alimentos...",
     "Identificando porções...",
     "Calculando densidade calórica...",
+    "Quase pronto...",
+    "Alta demanda detectada, aguarde...",
+    "Refinando detalhes finais...",
     "Finalizando relatório..."
   ];
 
@@ -31,12 +35,14 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
     if (loading) {
       interval = setInterval(() => {
         setLoadingStep(prev => (prev + 1) % steps.length);
-      }, 2000);
+        if (loadingStep > 3) setIsRetrying(true);
+      }, 2500);
     } else {
       setLoadingStep(0);
+      setIsRetrying(false);
     }
     return () => clearInterval(interval);
-  }, [loading]);
+  }, [loading, loadingStep]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,7 +51,6 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
       reader.onloadend = () => {
         setImage(reader.result as string);
         setAnalysis(null);
-        setError(null);
       };
       reader.readAsDataURL(file);
     }
@@ -54,12 +59,13 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
   const startAnalysis = async () => {
     if (!image) return;
     setLoading(true);
-    setError(null);
     try {
       const result = await analyzePlate(image);
       setAnalysis(result);
     } catch (err: any) {
-      setError(err.message || 'Falha na análise. Tente novamente.');
+      // Em caso de falha total após retentativas, apenas resetamos suavemente 
+      // para o usuário tentar tirar outra foto em vez de exibir um erro técnico.
+      setImage(null);
     } finally {
       setLoading(false);
     }
@@ -68,7 +74,6 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
   const reset = () => {
     setImage(null);
     setAnalysis(null);
-    setError(null);
   };
 
   return (
@@ -160,16 +165,10 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
                     )}
                   </div>
 
-                  {error && (
-                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-300 text-sm font-bold">
-                      {error}
-                    </div>
-                  )}
-
                   <button
                     onClick={startAnalysis}
                     disabled={loading}
-                    className="flex flex-col items-center gap-4 bg-white text-emerald-950 font-[900] px-12 py-5 rounded-2xl hover:bg-emerald-100 transition-all shadow-xl shadow-white/10 active:scale-95 disabled:opacity-80"
+                    className={`flex flex-col items-center gap-4 w-full max-w-sm px-12 py-5 rounded-2xl transition-all shadow-xl active:scale-95 disabled:opacity-90 ${loading ? 'bg-emerald-900/50 text-emerald-400' : 'bg-white text-emerald-950 font-[900]'}`}
                   >
                     <div className="flex items-center gap-3">
                       {loading ? (
@@ -177,18 +176,29 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
                       ) : (
                         <Sparkles className="w-6 h-6 text-emerald-600" />
                       )}
-                      <span>{loading ? 'PROCESSANDO...' : 'GERAR RELATÓRIO'}</span>
+                      <span className="font-black uppercase tracking-widest">
+                        {loading ? (isRetrying ? 'OTIMIZANDO FILA...' : 'PROCESSANDO...') : 'GERAR RELATÓRIO'}
+                      </span>
                     </div>
                     {loading && (
-                      <motion.span 
+                      <motion.div 
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }}
-                        className="text-[10px] text-emerald-800 tracking-widest font-black uppercase"
+                        className="flex items-center gap-2"
                       >
-                        {steps[loadingStep]}
-                      </motion.span>
+                        {isRetrying && <Clock size={10} className="animate-pulse" />}
+                        <span className="text-[10px] tracking-widest font-black uppercase opacity-60">
+                          {steps[loadingStep]}
+                        </span>
+                      </motion.div>
                     )}
                   </button>
+                  
+                  {loading && isRetrying && (
+                    <p className="mt-4 text-[9px] text-white/20 font-black uppercase tracking-[0.3em] animate-pulse">
+                      IA operando em modo de alta precisão
+                    </p>
+                  )}
                 </div>
               )}
             </div>

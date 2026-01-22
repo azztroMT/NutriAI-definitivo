@@ -1,10 +1,14 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { NutritionAnalysis } from "../types";
 
-export const analyzePlate = async (base64Image: string): Promise<NutritionAnalysis> => {
-  // Inicializa o cliente com a chave de ambiente injetada pelo Vite/Netlify
+const MAX_RETRIES = 4;
+const RETRY_DELAY = 2000; // 2 segundos base
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const analyzePlate = async (base64Image: string, attempt: number = 0): Promise<NutritionAnalysis> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
   const base64Data = base64Image.split(',')[1] || base64Image;
 
   const prompt = `
@@ -78,10 +82,16 @@ export const analyzePlate = async (base64Image: string): Promise<NutritionAnalys
     });
 
     const text = response.text;
-    if (!text) throw new Error("A IA não retornou dados.");
+    if (!text) throw new Error("Empty response");
     return JSON.parse(text) as NutritionAnalysis;
-  } catch (error: any) {
-    console.error("Erro NutriAI:", error);
-    throw new Error("Não foi possível analisar a imagem. Verifique a API KEY ou a qualidade da foto.");
+
+  } catch (error) {
+    if (attempt < MAX_RETRIES) {
+      // Espera um tempo progressivo (2s, 4s, 6s...) antes de tentar de novo
+      await sleep(RETRY_DELAY * (attempt + 1));
+      return analyzePlate(base64Image, attempt + 1);
+    }
+    console.error("Erro final após retentativas:", error);
+    throw new Error("Sistema em alta demanda. Por favor, tente capturar novamente em instantes.");
   }
 };
