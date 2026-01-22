@@ -4,10 +4,15 @@
   "name": "NutriAI - Inteligência Nutricional",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2424/2424520.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/4233/4233830.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/4233/4233830.png",
+      "sizes": "192x192",
+      "type": "image/png"
     }
   ],
   "start_url": "/",
