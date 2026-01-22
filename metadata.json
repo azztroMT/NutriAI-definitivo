@@ -1,0 +1,7 @@
+{
+  "name": "NutriAI",
+  "description": "Premium AI-powered nutritional analysis for your meals using advanced computer vision.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
