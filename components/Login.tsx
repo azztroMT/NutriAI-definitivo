@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LogIn, User as UserIcon, Sparkles, Activity } from 'lucide-react';
+import { LogIn, User as UserIcon, Instagram } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (name: string) => void;
@@ -9,8 +9,9 @@ interface LoginProps {
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [name, setName] = useState('');
-  // Nova URL da logo fornecida pelo usuário
-  const logoUrl = "https://raw.githubusercontent.com/azztroMT/Logo-nutriai/refs/heads/main/20260122_145227_0000.png?token=GHSAT0AAAAAADT2R7W5SQC3LJ2ISPRZ4M762LSMR5Q";
+  
+  // URL da logo corrigida conforme fornecido pelo usuário (link permanente sem token)
+  const logoUrl = "https://raw.githubusercontent.com/azztroMT/Logo-nutriai/refs/heads/main/20260122_145227_0000.png";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,16 +34,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
           className="inline-block mb-6 relative"
         >
+          {/* Brilho de fundo premium */}
           <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full scale-150" />
-          <div className="relative z-10 p-1 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-[2.5rem] border border-white/10 shadow-inner">
+          
+          <div className="relative z-10 p-1 bg-emerald-950/40 rounded-[2.5rem] border border-white/10 shadow-inner overflow-hidden">
             <img 
               src={logoUrl} 
               alt="NutriAI Logo" 
+              className="w-28 h-28 rounded-[2.2rem] object-cover shadow-2xl bg-emerald-900/20"
               onError={(e) => {
+                // Fallback caso o link de imagem falhe
                 const target = e.target as HTMLImageElement;
                 target.src = "https://cdn-icons-png.flaticon.com/512/11641/11641857.png";
               }}
-              className="w-28 h-28 rounded-[2.2rem] object-cover shadow-2xl"
             />
           </div>
         </motion.div>
@@ -53,13 +57,18 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <p className="text-emerald-300/60 font-medium text-sm uppercase tracking-widest">Inteligência Nutricional Premium</p>
       </div>
 
-      <div className="flex justify-center gap-3 mb-8">
-        <div className="glass px-3 py-1 rounded-full text-[10px] font-black text-emerald-400 border-emerald-500/20 flex items-center gap-1">
-          <Activity size={10} /> GEMINI 3 FLASH
-        </div>
-        <div className="glass px-3 py-1 rounded-full text-[10px] font-black text-emerald-400 border-emerald-500/20 flex items-center gap-1">
-          <Sparkles size={10} /> VISÃO COMPUTACIONAL
-        </div>
+      <div className="flex justify-center mb-8">
+        <motion.a
+          href="https://www.instagram.com/nutrimarlontimbo"
+          target="_blank"
+          rel="noopener noreferrer"
+          whileHover={{ scale: 1.05, backgroundColor: "rgba(16, 185, 129, 0.15)" }}
+          whileTap={{ scale: 0.95 }}
+          className="glass px-5 py-2.5 rounded-full text-[11px] font-[900] text-emerald-400 border border-emerald-500/20 flex items-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-emerald-900/20"
+        >
+          <Instagram size={14} className="text-emerald-500" />
+          @NUTRIMARLONTIMBO
+        </motion.a>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
