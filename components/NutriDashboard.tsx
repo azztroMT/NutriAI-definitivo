@@ -1,10 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, LogOut, ChevronLeft, Sparkles, Loader2, RefreshCw, Image as ImageIcon, CheckCircle, Clock, History } from 'lucide-react';
+import { Camera, LogOut, ChevronLeft, Sparkles, Loader2, RefreshCw, Image as ImageIcon, CheckCircle, Clock } from 'lucide-react';
 import { User, NutritionAnalysis } from '../types';
 import { analyzePlate } from '../services/geminiService';
-import { saveAnalysis, getUserHistory } from '../services/supabaseService';
 import AnalysisReport from './AnalysisReport';
 
 interface NutriDashboardProps {
@@ -18,8 +17,6 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
   const [isRetrying, setIsRetrying] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [analysis, setAnalysis] = useState<NutritionAnalysis | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
-  const [history, setHistory] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,11 +44,6 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
     return () => clearInterval(interval);
   }, [loading, loadingStep]);
 
-  const loadHistory = async () => {
-    const data = await getUserHistory(user.name);
-    setHistory(data);
-  };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -59,7 +51,6 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
       reader.onloadend = () => {
         setImage(reader.result as string);
         setAnalysis(null);
-        setShowHistory(false);
       };
       reader.readAsDataURL(file);
     }
@@ -69,7 +60,6 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
     setImage(null);
     setAnalysis(null);
     setLoading(false);
-    setShowHistory(false);
   };
 
   const startAnalysis = async () => {
@@ -78,22 +68,12 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
     try {
       const result = await analyzePlate(image);
       setAnalysis(result);
-      await saveAnalysis(user.name, result);
     } catch (err: any) {
-      console.error("Erro capturado silenciosamente:", err);
+      console.error("Erro na análise:", err);
       reset();
     } finally {
       setLoading(false);
     }
-  };
-
-  const toggleHistory = async () => {
-    if (!showHistory) {
-      await loadHistory();
-    }
-    setShowHistory(!showHistory);
-    setAnalysis(null);
-    setImage(null);
   };
 
   return (
@@ -111,12 +91,6 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
         
         <div className="flex gap-2">
           <button
-            onClick={toggleHistory}
-            className={`p-3 glass rounded-2xl transition-all border-white/5 ${showHistory ? 'bg-emerald-500/20 text-emerald-400' : 'text-white/60'}`}
-          >
-            <History className="w-5 h-5" />
-          </button>
-          <button
             onClick={onLogout}
             className="p-3 glass hover:bg-red-500/20 rounded-2xl transition-all border-white/5"
           >
@@ -126,48 +100,7 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
       </div>
 
       <AnimatePresence mode="wait">
-        {showHistory ? (
-          <motion.div
-            key="history"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="glass premium-border p-8 border-white/10"
-          >
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-2xl font-black uppercase tracking-tighter">Histórico de Refeições</h3>
-              <button onClick={() => setShowHistory(false)} className="text-xs font-black uppercase tracking-widest text-emerald-400">Voltar</button>
-            </div>
-            
-            <div className="grid gap-4">
-              {history.length > 0 ? history.map((item, idx) => (
-                <div key={idx} className="glass p-6 rounded-3xl border border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <h4 className="font-black text-lg uppercase text-white tracking-tight">{item.plate_name}</h4>
-                    <p className="text-xs text-white/40 uppercase font-bold tracking-widest">{new Date(item.created_at).toLocaleDateString('pt-BR')}</p>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-center">
-                      <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Calorias</p>
-                      <p className="font-black text-emerald-400">{item.total_calories} kcal</p>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        setAnalysis(item);
-                        setShowHistory(false);
-                      }}
-                      className="glass px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border-emerald-500/30 text-emerald-400"
-                    >
-                      Ver Detalhes
-                    </button>
-                  </div>
-                </div>
-              )) : (
-                <div className="py-20 text-center opacity-20 uppercase font-black tracking-widest">Nenhuma análise encontrada</div>
-              )}
-            </div>
-          </motion.div>
-        ) : !analysis ? (
+        {!analysis ? (
           <motion.div
             key="upload"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -283,7 +216,7 @@ const NutriDashboard: React.FC<NutriDashboardProps> = ({ user, onLogout }) => {
               </button>
               <h3 className="text-xl font-[900] tracking-tighter uppercase text-emerald-400">Inteligência Nutricional</h3>
             </div>
-            <AnalysisReport analysis={analysis} image={image || "https://cdn-icons-png.flaticon.com/512/11641/11641857.png"} />
+            <AnalysisReport analysis={analysis} image={image || ""} />
           </motion.div>
         )}
       </AnimatePresence>
