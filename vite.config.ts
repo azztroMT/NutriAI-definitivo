@@ -8,6 +8,11 @@ export default defineConfig({
     'process.env.API_KEY': JSON.stringify(process.env.API_KEY),
     'process.env.API_KEY_SECONDARY': JSON.stringify(process.env.API_KEY_SECONDARY),
     'process.env.API_KEY_TERTIARY': JSON.stringify(process.env.API_KEY_TERTIARY),
+    'process.env.NODE_ENV': JSON.stringify('production'),
     'global': 'window',
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false
   }
 });
